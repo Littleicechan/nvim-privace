@@ -3,6 +3,10 @@
 适用于 Neovim 0.11+（当前 WSL 是 0.12.6），插件管理用 lazy.nvim。
 同一套文件在 WSL 和 Windows 上通用：
 
+| 系统 | 配置目录 | 插件/数据目录 |
+|---|---|---|
+| WSL | `~/.config/nvim` | `~/.local/share/nvim` |
+| Windows | `C:\Users\yli20\AppData\Local\nvim` | `C:\Users\yli20\AppData\Local\nvim-data` |
 
 Leader 键是 **空格**。按下空格稍等，which-key 会弹出所有可用快捷键。
 
@@ -51,6 +55,22 @@ nvim/
 - 文件在外部被修改（如终端里 AI 改了代码）时自动重新加载
 - 帮助、quickfix 等窗口按 `q` 关闭
 - 调整终端大小时自动平分窗口
+- 按 `<F5>` 保存并运行当前文件：底部终端分屏，可以输入；结束后输出保留、光标回到代码，输出窗口里按 `q` 关闭，再按 `<F5>` 会替换上一次的输出。Windows 上会先切到 UTF-8 代码页，中文输出不乱码。各语言用的命令见下表，缺工具时会提示
+
+| 语言 | `<F5>` 执行的命令 |
+|---|---|
+| Lua | `lua 文件` |
+| Python | `python 文件`（WSL 用 `python3`；Windows 的 `python3` 是微软商店的占位程序） |
+| JavaScript / TypeScript | `node 文件`（Node 22.18+ 能直接运行 .ts） |
+| Go | `go run 文件` |
+| Java | `java 文件`（JDK 11+ 直接运行单个 .java） |
+| C# | `dotnet run 文件`（需要 .NET 10+） |
+| Zig | `zig run 文件` |
+| C / C++ | 依次找 gcc/g++ → zig → clang，编译到 `stdpath("cache")/run` 再运行，源码旁边不会多出 exe |
+| Rust | 有 `Cargo.toml` 就 `cargo run`，否则用 `rustc` 编译单个文件 |
+| Shell | `bash 文件`（Windows 用 Git Bash，因为 PATH 里的 `bash` 是 WSL 的） |
+
+Go、C#、Zig、C/C++ 第一次运行要先编译依赖（C# 还要 restore），大约 10～20 秒，之后就快了。
 
 ### lazy.lua
 - 没有 lazy.nvim 时自动从 GitHub 克隆（需要 git）
@@ -82,7 +102,8 @@ nvim/
 ### lsp.lua
 - mason 自动安装：bashls、gopls、jdtls、lua_ls、pyright、rust_analyzer、ts_ls
 - **clangd（C/C++）不走 mason**，系统里装了就自动启用（`sudo apt install clangd`，Windows 装 LLVM）
-- lua_ls 已配置识别 `vim` 全局变量，并避免把家目录当成项目根
+- lua_ls 按项目根目录分两种：nvim 配置/插件目录（`stdpath("config")`、`stdpath("data")`）按 LuaJIT + `vim` API 检查；其他 Lua 文件按 **Lua 5.5** 检查，和 `G:\Language\Lua\5.5.1` 的解释器一致。同时避免把家目录当成项目根
+- 不在任何项目里的单个 Lua 文件，lua_ls 要等第一次编辑后才出诊断；想一打开就有，在文件夹里放一个空的 `.luarc.json`
 - C/C++ 项目最好有 `compile_commands.json`，clangd 才能找到头文件
 
 ### cmp.lua（VS Code 风格）
@@ -146,6 +167,7 @@ nvim/
 | `<leader>lf` | 格式化 |
 | `<leader>d` | 当前行诊断 |
 | `<leader>xq` | 诊断放进 location list |
+| `<F5>` | 运行当前文件（Lua、Python、JS/TS、Go、Java、C#、Zig、C/C++、Rust、Shell；输出窗口里 `q` 关闭） |
 
 ### 补全（插入模式）
 | 键 | 功能 |
@@ -192,6 +214,7 @@ nvim/
 | cargo | rust_analyzer 运行需要 | rustup 官方脚本（`~/.cargo/bin` 目前是空的，cargo 不在 PATH 上） | 已装在 `G:\Language\Rust`：先设用户环境变量 `RUSTUP_HOME=G:\Language\Rust\rustup`、`CARGO_HOME=G:\Language\Rust\cargo`，再运行 `rustup-init.exe -y -c rust-src`（winget 的 `Rustlang.Rustup` 会装到 `%USERPROFILE%\.cargo`） |
 | ripgrep | 全文搜索 | `sudo apt install ripgrep` | `BurntSushi.ripgrep.MSVC` |
 | unzip | mason 安装部分工具 | `sudo apt install unzip` | 自带 |
+| lua | `<F5>` 运行 Lua 文件 | `sudo apt install lua5.4`（Debian 13 只有 5.4） | 已装 Lua 5.5.1：`G:\Language\Lua\5.5.1`（官方源码用 zig 编译，已加入用户 PATH） |
 | Claude Code | AI 终端 | `npm i -g @anthropic-ai/claude-code` | 同左 |
 
 环境变量：

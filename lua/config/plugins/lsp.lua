@@ -20,15 +20,33 @@ return {
       vim.lsp.config("*", {
         capabilities = require("cmp_nvim_lsp").default_capabilities(),
       })
+      -- lua_ls serves two kinds of Lua, chosen by the project root:
+      --   nvim config / plugins (stdpath config or data) -> LuaJIT + the vim API
+      --   anything else -> plain Lua 5.5, like the `lua` on PATH (G:\Language\Lua\5.5.1 on Windows)
+      local function inside(path, dir)
+        local function norm(p)
+          p = vim.fs.normalize(vim.uv.fs_realpath(p) or p)
+          return vim.fn.has("win32") == 1 and p:lower() or p
+        end
+        path, dir = norm(path), norm(dir)
+        return path == dir or vim.startswith(path, dir .. "/")
+      end
       vim.lsp.config("lua_ls", {
         -- ~ is a git repo, so ".git" alone would make /home/y the root; prefer nearer markers
         root_markers = { { ".luarc.json", ".luarc.jsonc", "stylua.toml", ".stylua.toml" }, "init.lua", ".git" },
-        settings = {
-          Lua = {
+        before_init = function(_, config)
+          local root = config.root_dir
+          local nvim = root and (inside(root, vim.fn.stdpath("config")) or inside(root, vim.fn.stdpath("data")))
+          config.settings.Lua = vim.tbl_deep_extend("force", config.settings.Lua, nvim and {
             runtime = { version = "LuaJIT" },
             diagnostics = { globals = { "vim" } },
-            workspace = { checkThirdParty = false, library = { vim.env.VIMRUNTIME } },
-          },
+            workspace = { library = { vim.env.VIMRUNTIME } },
+          } or {
+            runtime = { version = "Lua 5.5" },
+          })
+        end,
+        settings = {
+          Lua = { workspace = { checkThirdParty = false } },
         },
       })
 
