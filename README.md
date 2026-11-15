@@ -27,7 +27,7 @@ nvim/
         ├── coding.lua        文件树、git、自动括号、surround、TODO 高亮
         ├── lsp.lua           语言服务器（mason 安装）
         ├── cmp.lua           自动补全
-        └── ai.lua            AI：Claude + MiniMax
+        └── ai.lua            AI 终端：Claude Code、MiniMax3.1Flash
 ```
 
 想加新插件：在 `lua/config/plugins/` 里新建一个 `.lua` 文件，`return { ... }` 一个 lazy 插件列表即可，会被自动加载。
@@ -115,15 +115,12 @@ Go、C#、Zig、C/C++ 第一次运行要先编译依赖（C# 还要 restore）�
 - 命令行 `:` 和搜索 `/` 也有补全
 
 ### ai.lua
-- **codecompanion.nvim**：编辑器内 AI 聊天、行内修改、代理工具
-  - `claude` 适配器：`claude-opus-5-5`，读取环境变量 `ANTHROPIC_API_KEY`
-  - `minimax` 适配器：`MiniMax-M3.1-Flash`（可切换 `MiniMax-M3`），走 MiniMax 的 Anthropic 兼容接口
-  - 默认用 Claude；聊天窗口里按 `ga` 切换适配器/模型
-- **Claude Code 终端**（需要 `npm i -g @anthropic-ai/claude-code`）
-  - 官方版用 `ANTHROPIC_API_KEY`
-  - MiniMax 版把 Claude Code 接到 `api.minimaxi.com/anthropic`
-- MiniMax key：优先读 `MINIMAX_API_KEY`，没有就读 `~/.mmx/config.json`
-- 改模型：修改文件开头的 `CLAUDE_MODEL` / `MINIMAX_MODEL`
+两个 AI 代理，都开在浮动终端里（toggleterm）：
+- `<leader>ac` **Claude Code**：官方 `claude` 命令（需要 `npm i -g @anthropic-ai/claude-code`）
+- `<leader>am` **MiniMax3.1Flash**：Codex 命令行接 MiniMax 的 `MiniMax-M3.1-Flash`
+  - 模型、接口、key 都在 `~/.codex/config.toml` 里，nvim 不另外设置
+  - PATH 上有 `codex` 就用它；没有就用 Codex 自己放在 `~/.codex/packages/app-server-daemon/current` 的 `codex.exe`（跟着 Codex 自动更新），同时把它自带的 `rg` 加进这个终端的 PATH
+  - 换模型：改 `~/.codex/config.toml` 里的 `model`。`MiniMax3.1Flash` 只是 ai.lua 里 `agents.codex.name` 的显示名，记得一起改
 
 ## 快捷键速查
 
@@ -192,14 +189,8 @@ Go、C#、Zig、C/C++ 第一次运行要先编译依赖（C# 还要 restore）�
 ### AI
 | 键 | 功能 |
 |---|---|
-| `<leader>aa` | 开关 AI 聊天（Claude） |
-| `<leader>an` | 新建 MiniMax 聊天 |
-| `<leader>ap` | AI 动作面板 |
-| `<leader>ai` | 行内 AI 修改（普通/可视） |
-| `<leader>ad` | 把选中内容加进聊天（可视） |
-| `<leader>ac` | 终端：Claude Code（官方） |
-| `<leader>am` | 终端：Claude Code（MiniMax） |
-| `ga` | 聊天窗口内切换模型 |
+| `<leader>ac` | 终端：Claude Code |
+| `<leader>am` | 终端：MiniMax3.1Flash（Codex 接 MiniMax） |
 
 ## 依赖
 
@@ -215,15 +206,15 @@ Go、C#、Zig、C/C++ 第一次运行要先编译依赖（C# 还要 restore）�
 | ripgrep | 全文搜索 | `sudo apt install ripgrep` | `BurntSushi.ripgrep.MSVC` |
 | unzip | mason 安装部分工具 | `sudo apt install unzip` | 自带 |
 | lua | `<F5>` 运行 Lua 文件 | `sudo apt install lua5.4`（Debian 13 只有 5.4） | 已装 Lua 5.5.1：`G:\Language\Lua\5.5.1`（官方源码用 zig 编译，已加入用户 PATH） |
-| Claude Code | AI 终端 | `npm i -g @anthropic-ai/claude-code` | 同左 |
+| Claude Code | AI 终端（`<leader>ac`） | `npm i -g @anthropic-ai/claude-code` | 同左 |
+| Codex | AI 终端（`<leader>am`，MiniMax3.1Flash） | `npm i -g @openai/codex` | 已有：Codex 自带的 `~/.codex/packages/…/codex.exe`，nvim 自动找到；也可以 `npm i -g @openai/codex` |
 
-环境变量：
-- `ANTHROPIC_API_KEY`：Claude
-- `MINIMAX_API_KEY`：MiniMax（WSL 可省略，会读 `~/.mmx/config.json`）
+AI 的账号和模型都不在 nvim 里配置：
+- Claude Code：用 `claude` 自己的登录，或环境变量 `ANTHROPIC_API_KEY`
+- MiniMax3.1Flash：Codex 的 `~/.codex/config.toml`
 
 ## 常用命令
 - `:Lazy`：插件管理（`U` 更新、`S` 同步）
 - `:Mason`：语言服务器管理
 - `:checkhealth`：检查环境问题
 - `:LspInfo` / `:checkhealth vim.lsp`：查看语言服务器状态
-- `:CodeCompanionChat`：AI 聊天
